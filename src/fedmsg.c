@@ -82,6 +82,8 @@ static void
 _eventd_fedmsg_bus_free(gpointer data)
 {
     EventdFedmsgBus *bus = data;
+    if (!bus)
+        return;
 
     g_free(bus->name);
 
@@ -98,6 +100,8 @@ static void
 _eventd_fedmsg_event_bus_free(gpointer data)
 {
     EventdFedmsgEventBus *bus = data;
+    if (!bus)
+        return;
 
     libeventd_format_string_unref(bus->modname);
     libeventd_format_string_unref(bus->topic);
@@ -108,6 +112,9 @@ _eventd_fedmsg_event_bus_free(gpointer data)
 static void
 _eventd_fedmsg_event_free(gpointer data)
 {
+    if (!data)
+        return;
+
     g_list_free_full(data, _eventd_fedmsg_event_bus_free);
 }
 
@@ -176,6 +183,8 @@ static void
 _eventd_fedmsg_poll_context_free(gpointer data)
 {
     EventdFedmsgPollContext *poll_context = data;
+    if (!poll_context)
+        return;
 
     Py_DECREF(poll_context->socket);
     Py_DECREF(poll_context->name);
