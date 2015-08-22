@@ -1,0 +1,208 @@
+<?xml version='1.0' encoding='utf-8' ?>
+<!DOCTYPE refentry PUBLIC "-//OASIS//DTD DocBook XML V4.5//EN" "http://www.oasis-open.org/docbook/xml/4.5/docbookx.dtd" [
+<!ENTITY % config SYSTEM "config.ent">
+%config;
+]>
+
+<!--
+  eventd-plugin-fedmsg - Collect events from a fedmsg bus
+
+  Copyright 2015 Ben Boeckel
+
+  This program is free software: you can redistribute it and/or modify it
+  under the terms of the GNU Lesser General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or (at your
+  option) any later version.
+
+  This program is distributed in the hope that it will be useful, but WITHOUT
+  ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+  FITNESS FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License
+  for more details.
+
+  You should have received a copy of the GNU Lesser General Public License
+  along with this program. If not, see http://www.gnu.org/licenses/.
+-->
+
+<refentry xmlns:xi="http://www.w3.org/2001/XInclude"
+    id="eventd-fedmsg.conf">
+    <xi:include href="common-man.xml" xpointer="refentryinfo" />
+
+    <refmeta>
+        <refentrytitle>eventd-fedmsg.conf</refentrytitle>
+        <manvolnum>5</manvolnum>
+    </refmeta>
+
+    <refnamediv>
+        <refname>eventd-fedmsg.conf</refname>
+        <refpurpose>fedmsg plugin main configuration file</refpurpose>
+    </refnamediv>
+
+    <refsynopsisdiv>
+        <para>
+            Global configuration for the fedmsg plugin.
+        </para>
+    </refsynopsisdiv>
+
+    <refsect1 id="description">
+        <title>Description</title>
+
+        <para>
+            It controls the fedmsg collection behavior.
+        </para>
+    </refsect1>
+
+    <refsect1 id="sections">
+        <title>Sections</title>
+
+        <refsect2>
+            <title>Section <varname>[Fedmsg]</varname></title>
+
+            <variablelist>
+                <varlistentry>
+                    <term><varname>SubscribeBuses=</varname></term>
+                    <listitem>
+                        <para>A <type>string list</type></para>
+                        <para>A semicolon-separated list of buses to subscribe to.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>PublishBuses=</varname></term>
+                    <listitem>
+                        <para>A <type>string list</type></para>
+                        <para>A semicolon-separated list of buses to set up for sending.</para>
+                        <para>An error will be raised if <varname>AllowPublish=</varname> is <literal>false</literal> for any of these buses.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+
+        <refsect2>
+            <title>Section <varname>[FedmsgBus <replaceable>busname</replaceable>]</varname></title>
+
+            <variablelist>
+                <varlistentry>
+                    <term><varname>AllowPublish=</varname> (defaults to <literal>false</literal>)</term>
+                    <listitem>
+                        <para>A <type>boolean</type></para>
+                        <para>If <literal>true</literal>, messages may be sent via this bus.</para>
+                    </listitem>
+                </varlistentry>
+
+                <para>
+                    Common configuration parameters. These are used for both reading and writing to the bus.
+                </para>
+
+                <varlistentry>
+                    <term><varname>Name=</varname> (defaults to <literal>eventd.<replaceable>hostname</replaceable></literal>)</term>
+                    <listitem>
+                        <para>A <type>string</type></para>
+                        <para>The name for the eventd plugin's fedmsg client.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>Endpoints=</varname></term>
+                    <listitem>
+                        <para>A <type>string list</type></para>
+                        <para>A semicolon-separated list of endpoints to connect to. These are the sockets which will be connected as the bus.</para>
+                        <para>The <literal>fedora</literal> and <literal>debian</literal> endpoints may be specified to connect to those deployments.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>SrvEndpoints=</varname></term>
+                    <listitem>
+                        <para>A <type>string list</type></para>
+                        <para>A semicolon-separated list of domains to discover endpoints for using SRV records.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>SslDir=</varname> (defaults to <literal>$XDG_DATA_HOME/eventd/fedmsg/<replaceable>busname</replaceable>/ssl</literal>)</term>
+                    <listitem>
+                        <para>A <type>file URI</type></para>
+                        <para>A path to a directory holding files for SSL files.</para>
+                    </listitem>
+                </varlistentry>
+
+                <para>
+                    Reading configuration parameters.
+                </para>
+
+                <varlistentry>
+                    <term><varname>StatusDirectory=</varname> (defaults to <literal>$XDG_DATA_HOME/eventd/fedmsg/<replaceable>busname</replaceable></literal>)</term>
+                    <listitem>
+                        <para>A <type>directory</type></para>
+                        <para>A path where the status of the last-processed message may be saved. With <varname>DataGrepperUrl=</varname>, it may be used to retrieve a backlog of messages. Leave empty to disable.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>DataGrepperUrl=</varname></term>
+                    <listitem>
+                        <para>A <type>URI</type></para>
+                        <para>A URI to an instance of the datagrepper web service.</para>
+                        <para>The <literal>fedora</literal> and <literal>debian</literal> may be used to connect to those deployments.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>ValidateSignatures=</varname> (defaults to <literal>false</literal>)</term>
+                    <listitem>
+                        <para>A <type>boolean</type></para>
+                        <para>If <literal>true</literal>, received messages will be validated using <literal>ca.crt</literal> and <literal>crl.pem</literal> in the <varname>SslDir=</varname> directory.</para>
+                    </listitem>
+                </varlistentry>
+
+                <para>
+                    Writing configuration parameters.
+                </para>
+
+                <varlistentry>
+                    <term><varname>BindAddresses=</varname></term>
+                    <listitem>
+                        <para>A <type>string list</type></para>
+                        <para>A semicolon-separated list of sockets to bind to for sending events.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>TopicPrefix=</varname></term>
+                    <listitem>
+                        <para>A <type>string</type></para>
+                        <para>A topic prefix for messages sent to this bus. Required to send messages to this bus.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>Environment=</varname> (defaults to <literal>dev</literal>)</term>
+                    <listitem>
+                        <para>A <type>string</type></para>
+                        <para>The environment to indicate for messages sent to this bus. Required to send messages via this bus.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>HighWaterMark=</varname> (defaults to <literal>0</literal>)</term>
+                    <listitem>
+                        <para>An <type>integer</type></para>
+                        <para>The number of messages to queue in memory before dropping them. Use <literal>0</literal> for infinity.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>SignMessages=</varname> (defaults to <literal>false</literal>)</term>
+                    <listitem>
+                        <para>A <type>string</type></para>
+                        <para>If <literal>false</literal>, sent messages will not be signed.</para>
+                        <para>If <literal>gpg:<replaceable>fingerprint</replaceable></literal>, sent messages will be signed using GPG and the specified key.</para>
+                        <para>If <literal>x509:<replaceable>certname</replaceable></literal>, sent messages will be signed using X.509 using the <literal><replaceable>certname</replaceable>.crt</literal> and <literal><replaceable>certname</replaceable>.key</literal> files in the <varname>SslDir=</varname> directory.</para>
+                    </listitem>
+                </varlistentry>
+            </variablelist>
+        </refsect2>
+    </refsect1>
+
+    <xi:include href="common-man.xml" xpointer="see-also" />
+</refentry>
