@@ -121,7 +121,7 @@
                 <varlistentry>
                     <term><varname>SslDir=</varname> (defaults to <literal>$XDG_DATA_HOME/eventd/fedmsg/<replaceable>busname</replaceable>/ssl</literal>)</term>
                     <listitem>
-                        <para>A <type>file URI</type></para>
+                        <para>A <type>directory path</type></para>
                         <para>A path to a directory holding files for SSL files.</para>
                     </listitem>
                 </varlistentry>
