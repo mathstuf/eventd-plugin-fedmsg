@@ -2,7 +2,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(EventdEvent REQUIRED libeventd-event>=0.3)
 pkg_check_modules(EventdPlugin REQUIRED libeventd-plugin>=0.3)
 
-find_package(PythonLibs REQUIRED)
+find_package(PythonLibs 3.3 REQUIRED)
 
 include_directories(SYSTEM
     ${EventdEvent_INCLUDE_DIRS}
