@@ -180,6 +180,7 @@
                     <listitem>
                         <para>A <type>string</type></para>
                         <para>The environment to indicate for messages sent to this bus. Required to send messages via this bus.</para>
+                        <para>Possible values include: <literal>prod</literal>, <literal>stg</literal>, and <literal>dev</literal>.</para>
                     </listitem>
                 </varlistentry>
 
