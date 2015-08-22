@@ -25,6 +25,8 @@
 #include <libeventd-event.h>
 #include <eventd-plugin.h>
 
+#include <Python.h>
+
 struct _EventdPluginContext {
     EventdPluginCoreContext *core;
     EventdPluginCoreInterface *core_interface;
@@ -34,11 +36,17 @@ struct _EventdPluginContext {
 
     /* Contains references into `buses`. */
     GList *publish_buses;
+
+    /* Python bits */
+    gboolean initialized_python;
+    PyObject *fedmsg_core;
 };
 
 typedef struct {
     EventdPluginContext *context;
     gchar *name;
+
+    PyObject *fedmsg_ctx;
 } EventdFedmsgBus;
 
 typedef struct {
@@ -47,12 +55,37 @@ typedef struct {
     FormatString *topic;
 } EventdFedmsgEventBus;
 
+static PyObject *
+_eventd_fedmsg_python_call(PyObject *obj, const char *name, PyObject *args, PyObject *kwargs)
+{
+    PyObject *method = PyObject_GetAttrString(obj, name);
+    PyObject *ret = NULL;
+    if (method && PyCallable_Check(method)) {
+        ret = PyObject_Call(method, args, kwargs);
+    }
+    Py_XDECREF(method);
+
+    return ret;
+}
+
+static void
+_eventd_fedmsg_python_call_ignore(PyObject *obj, const char *name, PyObject *args, PyObject *kwargs)
+{
+    Py_XDECREF(_eventd_fedmsg_python_call(obj, name, args, kwargs));
+}
+
 static void
 _eventd_fedmsg_bus_free(gpointer data)
 {
     EventdFedmsgBus *bus = data;
 
     g_free(bus->name);
+
+    PyObject *args = PyTuple_New(0);
+    _eventd_fedmsg_python_call_ignore(bus->fedmsg_ctx, "destroy", args, NULL);
+    Py_DECREF(args);
+
+    Py_DECREF(bus->fedmsg_ctx);
 
     g_free(bus);
 }
@@ -74,6 +107,9 @@ _eventd_fedmsg_event_free(gpointer data)
     g_list_free_full(data, _eventd_fedmsg_event_bus_free);
 }
 
+static void
+_eventd_fedmsg_uninit(EventdPluginContext *context);
+
 static EventdPluginContext *
 _eventd_fedmsg_init(EventdPluginCoreContext *core, EventdPluginCoreInterface *core_interface)
 {
@@ -86,7 +122,25 @@ _eventd_fedmsg_init(EventdPluginCoreContext *core, EventdPluginCoreInterface *co
 
     context->events = g_hash_table_new_full(g_str_hash, g_str_equal, g_free, _eventd_fedmsg_event_free);
 
+    if (!Py_IsInitialized()) {
+        Py_Initialize();
+        context->initialized_python = TRUE;
+    }
+
+    PyObject *fedmsg = PyImport_ImportModule("fedmsg");
+    if (!fedmsg)
+        goto python_bail;
+
+    context->fedmsg_core = PyObject_GetAttrString(fedmsg, "core");
+    Py_DECREF(fedmsg);
+    if (!context->fedmsg_core)
+        goto python_bail;
+
     return context;
+
+python_bail:
+    _eventd_fedmsg_uninit(context);
+    return NULL;
 }
 
 static void
@@ -95,6 +149,11 @@ _eventd_fedmsg_uninit(EventdPluginContext *context)
     g_hash_table_unref(context->events);
     g_list_free_full(context->buses, _eventd_fedmsg_bus_free);
     g_list_free(context->publish_buses);
+
+    Py_XDECREF(context->fedmsg_core);
+
+    if (context->initialized_python)
+        Py_Finalize();
 
     g_free(context);
 }
