@@ -31,10 +31,14 @@ struct _EventdPluginContext {
     EventdPluginCoreContext *core;
     EventdPluginCoreInterface *core_interface;
 
+    gboolean ok;
+
     GList *buses;
     GHashTable *events;
+    GList *subscribe_sources;
 
     /* Contains references into `buses`. */
+    GList *subscribe_buses;
     GList *publish_buses;
 
     /* Python bits */
@@ -148,6 +152,7 @@ _eventd_fedmsg_uninit(EventdPluginContext *context)
 {
     g_hash_table_unref(context->events);
     g_list_free_full(context->buses, _eventd_fedmsg_bus_free);
+    g_list_free(context->subscribe_buses);
     g_list_free(context->publish_buses);
 
     Py_XDECREF(context->fedmsg_core);
@@ -158,16 +163,87 @@ _eventd_fedmsg_uninit(EventdPluginContext *context)
     g_free(context);
 }
 
+typedef struct {
+    EventdPluginContext *context;
+
+    EventdFedmsgBus *bus;
+    PyObject *socket;
+    PyObject *name;
+    PyObject *endpoint;
+} EventdFedmsgPollContext;
+
+static void
+_eventd_fedmsg_poll_context_free(gpointer data)
+{
+    EventdFedmsgPollContext *poll_context = data;
+
+    Py_DECREF(poll_context->socket);
+    Py_DECREF(poll_context->name);
+    Py_DECREF(poll_context->endpoint);
+
+    g_free(poll_context);
+}
+
+static gboolean
+_eventd_fedmsg_new_message(EventdFedmsgPollContext *poll_context)
+{
+    if (!poll_context->context->ok)
+        return G_SOURCE_REMOVE;
+
+    /* TODO: check ZMQ_EVENTS to see if a full message is available */
+    /* TODO: read from the socket */
+    /* TODO: fill in the event from the msg */
+    /* TODO: fill in the event information from the fedmsg api:
+     *   - _fedmsg_topic
+     *
+     *   - _fedmsg_title
+     *   - _fedmsg_subtitle
+     *   - _fedmsg_link
+     *   - _fedmsg_icon
+     *   - _fedmsg_secondary_icon
+     *   - _fedmsg_usernames
+     *   - _fedmsg_packages
+     *   - _fedmsg_objects
+     */
+
+    return G_SOURCE_CONTINUE;
+}
+
 static void
 _eventd_fedmsg_start(EventdPluginContext *context)
 {
-    /* TODO: implement */
+    context->ok = TRUE;
+
+    GList *bus_;
+    for (bus_ = context->subscribe_buses; bus_; bus_ = g_list_next(bus_)) {
+        EventdFedmsgBus *bus = bus_->data;
+
+        EventdFedmsgPollContext *poll_context = g_new0(EventdFedmsgPollContext, 1);
+        poll_context->context = context;
+        poll_context->bus = bus;
+
+        /*poll_context->socket = */
+        /*poll_context->name = */
+        /*poll_context->endpoint = */
+
+        int fd = -1;
+
+        /* TODO: get the FD from the socket */
+
+        GSource *source = g_unix_fd_source_new(fd, G_IO_IN);
+        g_source_set_callback(source, (GSourceFunc)_eventd_fedmsg_new_message, poll_context, _eventd_fedmsg_poll_context_free);
+
+        context->subscribe_sources = g_list_prepend(context->subscribe_sources, source);
+    }
 }
 
 static void
 _eventd_fedmsg_stop(EventdPluginContext *context)
 {
-    /* TODO: implement */
+    context->ok = FALSE;
+
+    g_list_free_full(context->subscribe_sources, (GDestroyNotify)g_source_unref);
+    context->subscribe_sources = NULL;
 }
 
 static void
@@ -251,8 +327,12 @@ _eventd_fedmsg_event_parse(EventdPluginContext *context, const gchar *config_id,
 static void
 _eventd_fedmsg_config_reset(EventdPluginContext *context)
 {
+    context->ok = FALSE;
+
     g_hash_table_remove_all(context->events);
 
+    g_list_free(context->subscribe_buses);
+    context->subscribe_buses = NULL;
     g_list_free(context->publish_buses);
     context->publish_buses = NULL;
 
