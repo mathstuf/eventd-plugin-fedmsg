@@ -8,6 +8,10 @@ include_directories(SYSTEM
 
 add_library(fedmsg MODULE
     fedmsg.c)
+target_link_libraries(fedmsg
+    PRIVATE
+        ${EventdEvent_LIBRARIES}
+        ${EventdPlugin_LIBRARIES})
 
 install(
     TARGETS     fedmsg
