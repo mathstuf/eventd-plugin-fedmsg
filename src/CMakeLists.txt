@@ -16,8 +16,12 @@ target_link_libraries(fedmsg
         ${EventdEvent_LIBRARIES}
         ${EventdPlugin_LIBRARIES}
         ${PYTHON_LIBRARY})
+set_target_properties(fedmsg
+    PROPERTIES
+        PREFIX    ""
+        NO_SONAME 1)
 
 install(
     TARGETS     fedmsg
-    DESTINATION lib${LIB_SUFFIX}/eventd
+    DESTINATION lib${LIB_SUFFIX}/eventd/plugins
     COMPONENT   runtime)
