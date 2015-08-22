@@ -77,10 +77,18 @@
 
             <variablelist>
                 <varlistentry>
-                    <term><varname>Disable=</varname></term>
+                    <term><varname>ModName=</varname></term>
                     <listitem>
-                        <para>A <type>boolean</type></para>
-                        <para>If <literal>true</literal>, the event is not dispatched.</para>
+                        <para>A <type>format string</type></para>
+                        <para>The module name for the event. Usually the service or host of the source.</para>
+                    </listitem>
+                </varlistentry>
+
+                <varlistentry>
+                    <term><varname>Topic=</varname></term>
+                    <listitem>
+                        <para>A <type>format string</type></para>
+                        <para>The topic of the event. Usually a <replaceable>verb</replaceable> or <replaceable>verb</replaceable>.<replaceable>noun</replaceable> describing what occurred.</para>
                     </listitem>
                 </varlistentry>
             </variablelist>
