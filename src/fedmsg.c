@@ -261,6 +261,30 @@ _eventd_fedmsg_config_reset(EventdPluginContext *context)
 }
 
 static void
+_eventd_fedmsg_python_add_data_to_add_dict(gpointer key, gpointer value, gpointer data)
+{
+    gchar *skey = key;
+    gchar *svalue = value;
+    PyObject *dict = data;
+
+    PyObject *py_value = PyUnicode_FromString(svalue);
+    if (PyDict_SetItemString(dict, skey, py_value))
+        g_warning("failed to add %s data into the dictionary", skey);
+    Py_DECREF(py_value);
+}
+
+static PyObject *
+_eventd_fedmsg_event_to_python_dict(EventdEvent *event)
+{
+    PyObject *dict = PyDict_New();
+    GHashTable *data = eventd_event_get_all_data(event);
+
+    g_hash_table_foreach(data, _eventd_fedmsg_python_add_data_to_add_dict, dict);
+
+    return dict;
+}
+
+static void
 _eventd_fedmsg_event_action(EventdPluginContext *context, const gchar *config_id, EventdEvent *event)
 {
     GList *buses;
@@ -276,7 +300,22 @@ _eventd_fedmsg_event_action(EventdPluginContext *context, const gchar *config_id
         gchar *modname = libeventd_format_string_get_string(bus->modname, event, NULL, NULL);
         gchar *topic = libeventd_format_string_get_string(bus->topic, event, NULL, NULL);
 
-        /* TODO: send the event */
+        PyObject *py_modname = PyUnicode_FromString(modname);
+        PyObject *py_topic = PyUnicode_FromString(topic);
+
+        PyObject *args = PyTuple_New(0);
+        PyObject *kwargs = PyDict_New();
+        int ret = 0;
+        ret |= PyDict_SetItemString(kwargs, "modname", py_modname);
+        ret |= PyDict_SetItemString(kwargs, "topic", py_topic);
+        ret |= PyDict_SetItemString(kwargs, "msg", _eventd_fedmsg_event_to_python_dict(event));
+
+        if (!ret)
+            _eventd_fedmsg_python_call(bus->bus->fedmsg_ctx, "publish", args, kwargs);
+        else
+            g_warning("failed to construct arguments for publishing");
+        Py_DECREF(args);
+        Py_DECREF(kwargs);
     }
 }
 
